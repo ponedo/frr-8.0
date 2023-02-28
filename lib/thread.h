@@ -21,9 +21,11 @@
 #ifndef _ZEBRA_THREAD_H
 #define _ZEBRA_THREAD_H
 
+#include <stdio.h>
 #include <zebra.h>
 #include <pthread.h>
 #include <poll.h>
+#include <sys/epoll.h>
 #include "monotime.h"
 #include "frratomic.h"
 #include "typesafe.h"
@@ -44,21 +46,72 @@ struct rusage_t {
 PREDECL_LIST(thread_list);
 PREDECL_HEAP(thread_timer_list);
 
+struct frr_epoll_event {
+	/* the index of this frr_epoll_event instance in .event_ptrs or 
+	 * .new_event_ptrs */
+	int index; //index should be -1 for a invalid frr_epoll_event
+	struct epoll_event ev;
+};
+
 struct fd_handler {
 	/* number of pfd that fit in the allocated space of pfds. This is a
 	 * constant and is the same for both pfds and copy.
 	 */
-	nfds_t pfdsize;
+	nfds_t event_size;
 
-	/* file descriptors to monitor for i/o */
-	struct pollfd *pfds;
-	/* number of pollfds stored in pfds */
-	nfds_t pfdcount;
+	/* the epoll fd set to monitor for i/o. This should be coordinated with 
+	 * the "events" field below */
+	int epoll_fd;
 
-	/* chunk used for temp copy of pollfds */
-	struct pollfd *copy;
-	/* number of pollfds stored in copy */
-	nfds_t copycount;
+	/* Below we define two arrays, namely .events and .new_events. 
+	 * The function of two arrays are analogous to .pfds and .copy in old
+	 * version fd_handler which uses poll().
+	 * 
+	 * .events hold existing monitored events that have been registered in
+	 * kernel by epoll_ctl() calls. Similar to .copy array in old version, 
+	 * .events is updated just before every time fd_poll() is called.
+	 * 
+	 * .new_events hold event update requests during the interval from last 
+	 * fd_poll() call to next fd_poll() call. .new_events functions as a 
+	 * holder of new event request, which is similar to .pfds array in old
+	 * version
+	 * 
+	 * Both array are indexed by fd for fast update. However, during 
+	 * cancel_arg_helper when canceling a thread, all frr_epoll_events 
+	 * are supposed to be traversed, which is inefficient. We define two
+	 * compact arrays .event_ptrs and .new_event_ptrs for fast canceling.
+	 * Only (new_)event_count number of elements in .(new_)event_ptr are 
+	 * valid, and each element refers a valid frr_epoll_event.
+	 * 
+	 * frr_epoll_event arrays and ptr arrays are mutually referenced. An 
+	 * frr_epoll_event reference its corresponding ptr element by its 
+	 * .index field. An ptr reference its corresponding frr_epoll_event 
+	 * natually since it is a pointer. */
+
+	
+	/* the buffer which stores monitored fds and corresponding events, 
+	 * indexed by fd */
+    struct frr_epoll_event *events;
+	/* a compact array of pointers to frr_epoll_event in .events array, 
+	 * This array is traversed if needed when doing do_thread_cancel */
+    struct frr_epoll_event **event_ptrs;
+	/* number of valid frr_epoll_event in .events (number of valid pointers)
+	 * in .events_ptrs */
+	nfds_t event_count;
+
+	/* the temp buffer which stores requests of adding new fd into 
+	 * epoll_fd set, or modifying the events of existing fds. 
+	 * Indexed by fd */
+	struct frr_epoll_event *new_events;
+	/* a compact array of pointers to frr_epoll_event in .new_events array, 
+	 * This array is traversed if needed when doing do_thread_cancel */
+    struct frr_epoll_event **new_event_ptrs;
+	/* number of valid frr_epoll_event in .new_events (number of valid 
+	 * pointers in .new_events_ptrs */
+	nfds_t new_event_count;
+	
+	/* the buffer which stores the results of epoll_wait() */
+    struct epoll_event *revents;
 };
 
 struct xref_threadsched {
@@ -73,6 +126,8 @@ struct xref_threadsched {
 struct thread_master {
 	char *name;
 
+	FILE *f_debug;
+
 	struct thread **read;
 	struct thread **write;
 	struct thread_timer_list_head timer;
@@ -82,6 +137,7 @@ struct thread_master {
 	pthread_cond_t cancel_cond;
 	struct hash *cpu_record;
 	int io_pipe[2];
+	bool awakened;
 	int fd_limit;
 	struct fd_handler handler;
 	unsigned long alloc;
