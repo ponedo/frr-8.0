@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 FRAME=$1 # "y" or "n"
 OPTIM=$2 # "O0" or "O2"
