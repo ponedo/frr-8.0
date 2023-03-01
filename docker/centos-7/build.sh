@@ -40,7 +40,7 @@ set -e
 # Package version needs to be decimal
 ##
 GITREV="$(git rev-parse --short=10 HEAD)"
-GITTAG="$(git describe --tags | grep -o -E "frr(-[^-]*?){1,2}?")"
+GITTAG="$(git describe --tags | grep -o -E "frr-[^-]+(-[A-Za-z]+)?")"
 PKGVER="$(printf '%u\n' 0x$GITREV)"
 
 if [ "${MACHINE}" == "x86_64" ] ; then
