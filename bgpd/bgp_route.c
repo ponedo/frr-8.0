@@ -3609,6 +3609,8 @@ int bgp_update(struct peer *peer, const struct prefix *p, uint32_t addpath_id,
 	uint8_t pi_type = 0;
 	uint8_t pi_sub_type = 0;
 
+	zlog_info("bgp update 0");
+
 	if (frrtrace_enabled(frr_bgp, process_update)) {
 		char pfxprint[PREFIX2STR_BUFFER];
 
@@ -3703,12 +3705,16 @@ int bgp_update(struct peer *peer, const struct prefix *p, uint32_t addpath_id,
 		goto filtered;
 	}
 
+	zlog_info("bgp update 1");
+
 	/* Apply incoming filter.  */
 	if (bgp_input_filter(peer, p, attr, afi, safi) == FILTER_DENY) {
 		peer->stat_pfx_filter++;
 		reason = "filter;";
 		goto filtered;
 	}
+
+	zlog_info("bgp update 2");
 
 	/* RFC 8212 to prevent route leaks.
 	 * This specification intends to improve this situation by requiring the
@@ -3740,6 +3746,8 @@ int bgp_update(struct peer *peer, const struct prefix *p, uint32_t addpath_id,
 		}
 
 	new_attr = *attr;
+
+	zlog_info("bgp update 3");
 
 	/* Apply incoming route-map.
 	 * NB: new_attr may now contain newly allocated values from route-map
@@ -3838,6 +3846,8 @@ int bgp_update(struct peer *peer, const struct prefix *p, uint32_t addpath_id,
 	 */
 	if (bgp_maximum_prefix_overflow(peer, afi, safi, 0))
 		return -1;
+
+	zlog_info("bgp update 4");
 
 	/* If the update is implicit withdraw. */
 	if (pi) {
@@ -4194,6 +4204,8 @@ int bgp_update(struct peer *peer, const struct prefix *p, uint32_t addpath_id,
 		return 0;
 	} // End of implicit withdraw
 
+	zlog_info("bgp update 5");
+
 	/* Received Logging. */
 	if (bgp_debug_update(peer, p, NULL, 1)) {
 		if (!peer->rcvd_attr_printed) {
@@ -4222,6 +4234,8 @@ int bgp_update(struct peer *peer, const struct prefix *p, uint32_t addpath_id,
 		if (!(afi == AFI_L2VPN && safi == SAFI_EVPN))
 			bgp_set_valid_label(&extra->label[0]);
 	}
+
+	zlog_info("bgp update 6");
 
 	/* Update SRv6 SID */
 	if (safi == SAFI_MPLS_VPN) {
@@ -4308,6 +4322,8 @@ int bgp_update(struct peer *peer, const struct prefix *p, uint32_t addpath_id,
 
 	hook_call(bgp_process, bgp, afi, safi, dest, peer, false);
 
+	zlog_info("bgp update 7");
+
 	/* Process change. */
 	bgp_process(bgp, dest, afi, safi);
 
@@ -4334,6 +4350,7 @@ int bgp_update(struct peer *peer, const struct prefix *p, uint32_t addpath_id,
 	}
 #endif
 
+	zlog_info("bgp update 8");
 	return 0;
 
 /* This BGP update is filtered.  Log the reason then update BGP

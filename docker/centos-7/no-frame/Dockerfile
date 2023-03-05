@@ -2,6 +2,8 @@ FROM --platform=${TARGETPLATFORM} centos:centos7
 ARG TARGETARCH
 RUN cp -a /etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo.bak
 COPY ./docker/centos-7/CentOS-7-${TARGETARCH}.repo /etc/yum.repos.d/CentOS-Base.repo
+
+ARG MACHINE
 RUN yum clean all
 RUN yum makecache
 RUN yum install -y epel-release
@@ -10,10 +12,10 @@ RUN yum install -y rpm-build autoconf automake libtool make \
         json-c-devel pam-devel bison flex pytest c-ares-devel \
         python3-devel python3-sphinx systemd-devel libcap-devel \
         wget sudo \
-        https://ci1.netdef.org/artifact/LIBYANG-LIBYANGV2/shared/build-2/CentOS-7-x86_64-Packages/libyang2-2.0.0.10.g2eb910e4-1.el7.x86_64.rpm \
-        https://ci1.netdef.org/artifact/LIBYANG-LIBYANGV2/shared/build-2/CentOS-7-x86_64-Packages/libyang2-devel-2.0.0.10.g2eb910e4-1.el7.x86_64.rpm \
-        https://ci1.netdef.org/artifact/RPKI-RTRLIB/shared/build-110/CentOS-7-x86_64-Packages/librtr-0.7.0-1.el7.centos.x86_64.rpm \
-        https://ci1.netdef.org/artifact/RPKI-RTRLIB/shared/build-110/CentOS-7-x86_64-Packages/librtr-devel-0.7.0-1.el7.centos.x86_64.rpm
+        https://ci1.netdef.org/artifact/LIBYANG-LIBYANGV2/shared/build-2/CentOS-7-$MACHINE-Packages/libyang2-2.0.0.10.g2eb910e4-1.el7.x86_64.rpm \
+        https://ci1.netdef.org/artifact/LIBYANG-LIBYANGV2/shared/build-2/CentOS-7-$MACHINE-Packages/libyang2-devel-2.0.0.10.g2eb910e4-1.el7.x86_64.rpm \
+        https://ci1.netdef.org/artifact/RPKI-RTRLIB/shared/build-110/CentOS-7-$MACHINE-Packages/librtr-0.7.0-1.el7.centos.x86_64.rpm \
+        https://ci1.netdef.org/artifact/RPKI-RTRLIB/shared/build-110/CentOS-7-$MACHINE-Packages/librtr-devel-0.7.0-1.el7.centos.x86_64.rpm
 # Update pip
 # RUN curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output /tmp/get-pip.py && \
 #         python2 /tmp/get-pip.py && \

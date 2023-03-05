@@ -29,9 +29,12 @@ fi
 
 MACHINE="$(uname -m)"
 if [ "${MACHINE}" == "x86_64" ] ; then
-	MACHINE="amd64"
+	PLATFORM="amd64"
 elif [ "${MACHINE}" == "aarch64" ] ; then
-	MACHINE="arm64"
+	PLATFORM="arm64"
+	MACHINE="arm8"
+else
+	PLATFORM="${MACHINE}"
 fi
 
 set -e
@@ -43,17 +46,10 @@ GITREV="$(git rev-parse --short=10 HEAD)"
 GITTAG="$(git describe --tags | grep -o -E "frr-[^-]+(-[A-Za-z]+)?")"
 PKGVER="$(printf '%u\n' 0x$GITREV)"
 
-if [ "${MACHINE}" == "x86_64" ] ; then
-	MACHINE="amd64"
-elif [ "${MACHINE}" == "aarch64" ] ; then
-	MACHINE="arm64"
-else
-	MACHINE="${MACHINE}"
-fi
-
 docker build \
-	--platform=linux/${MACHINE} \
+	--platform=linux/${PLATFORM} \
 	--file=docker/centos-7/${FRAME_TAG}/Dockerfile \
+	--build-arg="MACHINE=$MACHINE" \
 	--build-arg="PKGVER=$PKGVER" \
 	--build-arg="OPTIM_TAG=$OPTIM_TAG" \
 	--tag="ponedo/frr:${MACHINE}-${GITTAG}-${FRAME_TAG}-${OPTIM_TAG}" \
