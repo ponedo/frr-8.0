@@ -73,4 +73,3 @@ RUN source ~/.bashrc \
     && make -j16 && make install
 
 RUN rm -rf /src
-RUN rm -rf /opt/glibc-2.29
