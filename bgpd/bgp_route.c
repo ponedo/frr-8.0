@@ -3609,7 +3609,10 @@ int bgp_update(struct peer *peer, const struct prefix *p, uint32_t addpath_id,
 	uint8_t pi_type = 0;
 	uint8_t pi_sub_type = 0;
 
-	zlog_info("bgp update 0");
+	struct timespec ts;
+
+	clock_gettime(CLOCK_MONOTONIC, &ts); zlog_info("bgp update 0, %d.%ld", ts.tv_sec, ts.tv_nsec);
+	clock_gettime(CLOCK_MONOTONIC, &ts); zlog_info("bgp update 1, %d.%ld", ts.tv_sec, ts.tv_nsec);
 
 	if (frrtrace_enabled(frr_bgp, process_update)) {
 		char pfxprint[PREFIX2STR_BUFFER];
@@ -3705,7 +3708,7 @@ int bgp_update(struct peer *peer, const struct prefix *p, uint32_t addpath_id,
 		goto filtered;
 	}
 
-	zlog_info("bgp update 1");
+	clock_gettime(CLOCK_MONOTONIC, &ts); zlog_info("bgp update 2, %d.%ld", ts.tv_sec, ts.tv_nsec);
 
 	/* Apply incoming filter.  */
 	if (bgp_input_filter(peer, p, attr, afi, safi) == FILTER_DENY) {
@@ -3714,7 +3717,7 @@ int bgp_update(struct peer *peer, const struct prefix *p, uint32_t addpath_id,
 		goto filtered;
 	}
 
-	zlog_info("bgp update 2");
+	clock_gettime(CLOCK_MONOTONIC, &ts); zlog_info("bgp update 3, %d.%ld", ts.tv_sec, ts.tv_nsec);
 
 	/* RFC 8212 to prevent route leaks.
 	 * This specification intends to improve this situation by requiring the
@@ -3747,7 +3750,7 @@ int bgp_update(struct peer *peer, const struct prefix *p, uint32_t addpath_id,
 
 	new_attr = *attr;
 
-	zlog_info("bgp update 3");
+	clock_gettime(CLOCK_MONOTONIC, &ts); zlog_info("bgp update 4, %d.%ld", ts.tv_sec, ts.tv_nsec);
 
 	/* Apply incoming route-map.
 	 * NB: new_attr may now contain newly allocated values from route-map
@@ -3804,6 +3807,8 @@ int bgp_update(struct peer *peer, const struct prefix *p, uint32_t addpath_id,
 		pi_sub_type = pi->sub_type;
 	}
 
+	clock_gettime(CLOCK_MONOTONIC, &ts); zlog_info("bgp update 5, %d.%ld", ts.tv_sec, ts.tv_nsec);
+
 	/* next hop check.  */
 	if (!CHECK_FLAG(peer->flags, PEER_FLAG_IS_RFAPI_HD)
 	    && bgp_update_martian_nexthop(bgp, afi, safi, pi_type, pi_sub_type,
@@ -3847,7 +3852,7 @@ int bgp_update(struct peer *peer, const struct prefix *p, uint32_t addpath_id,
 	if (bgp_maximum_prefix_overflow(peer, afi, safi, 0))
 		return -1;
 
-	zlog_info("bgp update 4");
+	clock_gettime(CLOCK_MONOTONIC, &ts); zlog_info("bgp update 6, %d.%ld", ts.tv_sec, ts.tv_nsec);
 
 	/* If the update is implicit withdraw. */
 	if (pi) {
@@ -4204,7 +4209,7 @@ int bgp_update(struct peer *peer, const struct prefix *p, uint32_t addpath_id,
 		return 0;
 	} // End of implicit withdraw
 
-	zlog_info("bgp update 5");
+	clock_gettime(CLOCK_MONOTONIC, &ts); zlog_info("bgp update 7, %d.%ld", ts.tv_sec, ts.tv_nsec);
 
 	/* Received Logging. */
 	if (bgp_debug_update(peer, p, NULL, 1)) {
@@ -4235,7 +4240,7 @@ int bgp_update(struct peer *peer, const struct prefix *p, uint32_t addpath_id,
 			bgp_set_valid_label(&extra->label[0]);
 	}
 
-	zlog_info("bgp update 6");
+	clock_gettime(CLOCK_MONOTONIC, &ts); zlog_info("bgp update 8, %d.%ld", ts.tv_sec, ts.tv_nsec);
 
 	/* Update SRv6 SID */
 	if (safi == SAFI_MPLS_VPN) {
@@ -4322,11 +4327,12 @@ int bgp_update(struct peer *peer, const struct prefix *p, uint32_t addpath_id,
 
 	hook_call(bgp_process, bgp, afi, safi, dest, peer, false);
 
-	zlog_info("bgp update 7");
+	clock_gettime(CLOCK_MONOTONIC, &ts); zlog_info("bgp update 9, %d.%ld", ts.tv_sec, ts.tv_nsec);
 
 	/* Process change. */
 	bgp_process(bgp, dest, afi, safi);
 
+	clock_gettime(CLOCK_MONOTONIC, &ts); zlog_info("bgp update 10, %d.%ld", ts.tv_sec, ts.tv_nsec);
 	if (SAFI_UNICAST == safi
 	    && (bgp->inst_type == BGP_INSTANCE_TYPE_VRF
 		|| bgp->inst_type == BGP_INSTANCE_TYPE_DEFAULT)) {
@@ -4350,7 +4356,7 @@ int bgp_update(struct peer *peer, const struct prefix *p, uint32_t addpath_id,
 	}
 #endif
 
-	zlog_info("bgp update 8");
+	clock_gettime(CLOCK_MONOTONIC, &ts); zlog_info("bgp update 11, %d.%ld", ts.tv_sec, ts.tv_nsec);
 	return 0;
 
 /* This BGP update is filtered.  Log the reason then update BGP
