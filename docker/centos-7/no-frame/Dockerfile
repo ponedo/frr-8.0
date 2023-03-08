@@ -71,3 +71,5 @@ RUN source ~/.bashrc \
         --with-pkg-extra-version="_git$PKGVER" \ 
         SPHINXBUILD=/usr/bin/sphinx-build \
     && make -j16 && make install
+
+RUN rm -rf /src
