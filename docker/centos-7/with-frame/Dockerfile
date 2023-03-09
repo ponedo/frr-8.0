@@ -39,7 +39,7 @@ RUN source ~/.bashrc && \
         cd /opt/glibc-2.29 && \
         mkdir build && \
         cd build && \
-        ../configure CFLAGS="-O2 -fno-omit-frame-pointer" --prefix=/usr && \
+        ../configure CFLAGS="-$OPTIM_TAG -fno-omit-frame-pointer" --prefix=/usr && \
         make -j32 && make install || true
 
 # Add user group
@@ -83,5 +83,7 @@ RUN source ~/.bashrc \
         SPHINXBUILD=/usr/bin/sphinx-build \
     && make -j16 && make install
 
-RUN rm -rf /src
-RUN rm -rf /opt/glibc-2.29
+RUN rm -rf /src \
+    && rm -rf /opt/glibc-2.29 \
+    && rm -rf /opt/glibc-2.29.tar.gz \
+    && yum clean all
