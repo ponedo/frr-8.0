@@ -1,5 +1,7 @@
 FROM --platform=${TARGETPLATFORM} centos:centos7
 ARG TARGETARCH
+ARG OPTIM_TAG
+
 RUN cp -a /etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo.bak
 COPY ./docker/centos-7/CentOS-7-${TARGETARCH}.repo /etc/yum.repos.d/CentOS-Base.repo
 RUN yum clean all

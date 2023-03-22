@@ -1,4 +1,5 @@
-FROM ubuntu:20.04
+FROM --platform=${TARGETPLATFORM} ubuntu:20.04
+ARG OPTIM_TAG
 
 ARG DEBIAN_FRONTEND=noninteractive
 ENV APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=DontWarn
@@ -37,7 +38,7 @@ RUN cd /opt && \
     cd /opt/glibc-2.34 && \
     mkdir build && \
     cd build && \
-    ../configure CFLAGS="-O2 -fno-omit-frame-pointer" --prefix=/usr && \
+    ../configure CFLAGS="-$OPTIM_TAG -fno-omit-frame-pointer" --prefix=/usr && \
     make -j16
     # rm -rf /opt/glibc-2.34
 
@@ -63,7 +64,7 @@ RUN . /etc/environment && \
     cd libyang && \
     git checkout v2.0.0 && \
     mkdir build; cd build && \
-    cmake -DCMAKE_C_FLAGS="-Wl,-rpath=${GLIBC_LIB_PATH_ENV}:${LIB_PATH_ENV} -Wl,--dynamic-linker=${GLIBC}/elf/ld.so -O2 -fno-omit-frame-pointer" \
+    cmake -DCMAKE_C_FLAGS="-Wl,-rpath=${GLIBC_LIB_PATH_ENV}:${LIB_PATH_ENV} -Wl,--dynamic-linker=${GLIBC}/elf/ld.so -$OPTIM_TAG -fno-omit-frame-pointer" \
           -DCMAKE_INSTALL_PREFIX:PATH=/usr \
           -DCMAKE_BUILD_TYPE:String="Release" .. && \
     make -j16 && \
@@ -78,7 +79,7 @@ RUN cd /home/frr/ && ls -al && ls -al frr
 RUN . /etc/environment && \
     cd /home/frr/frr/ && \
     ./bootstrap.sh && \
-    ./configure CFLAGS="-Wl,-rpath=${GLIBC_LIB_PATH_ENV}:${LIB_PATH_ENV} -Wl,--dynamic-linker=${GLIBC}/elf/ld.so -O2 -fno-omit-frame-pointer" \
+    ./configure CFLAGS="-Wl,-rpath=${GLIBC_LIB_PATH_ENV}:${LIB_PATH_ENV} -Wl,--dynamic-linker=${GLIBC}/elf/ld.so -$OPTIM_TAG -fno-omit-frame-pointer" \
        --prefix=/usr \
        --localstatedir=/var/run/frr \
        --sbindir=/usr/lib/frr \
