@@ -42,7 +42,16 @@ RUN source ~/.bashrc && \
         mkdir build && \
         cd build && \
         ../configure CFLAGS="-$OPTIM_TAG -fno-omit-frame-pointer" --prefix=/usr && \
-        make -j32 && make install || true
+        make -j32 && \
+        rm -rf /opt/glibc-2.29.tar.gz
+
+ENV GLIBC=/opt/glibc-2.29/build
+ARG LIB_PATH=/lib
+ARG GLIBC_LIB_PATH=/lib
+RUN LIB_PATH=$(grep -v '^#' $(cat /etc/ld.so.conf | grep 'include' | awk '{print $2}') | awk -F ':' '{print $2}' | paste -s -d ':') && \
+    echo "export LIB_PATH_ENV=$LIB_PATH" >> /etc/environment && \
+    GLIBC_LIB_PATH=${GLIBC}:${GLIBC}/math:${GLIBC}/elf:${GLIBC}/dlfcn:${GLIBC}/nss:${GLIBC}/nis:${GLIBC}/rt:${GLIBC}/resolv:${GLIBC}/nptl:${GLIBC}/dfp && \
+    echo "export GLIBC_LIB_PATH_ENV=$GLIBC_LIB_PATH" >> source ~/.bashrc
 
 # Add user group
 RUN groupadd -r -g 92 frr && \
@@ -58,13 +67,13 @@ RUN groupadd -r -g 92 frr && \
 RUN mkdir -p /etc/frr /var/run/frr
 RUN chown -R frr:frr /etc/frr /var/run/frr
 
-COPY . /src
 ARG PKGVER
+COPY . /src
 
 RUN source ~/.bashrc \
     && cd /src \
     && ./bootstrap.sh \
-    && ./configure CFLAGS="-$OPTIM_TAG -fno-omit-frame-pointer" \ 
+    && ./configure CFLAGS="-Wl,-rpath=${GLIBC_LIB_PATH_ENV}:${LIB_PATH_ENV} -Wl,--dynamic-linker=${GLIBC}/elf/ld.so -$OPTIM_TAG -fno-omit-frame-pointer" \
         --bindir=/usr/bin \ 
         --sbindir=/usr/lib/frr \ 
         --sysconfdir=/etc/frr \ 
@@ -85,6 +94,4 @@ RUN source ~/.bashrc \
     && make -j16 && make install
 
 RUN rm -rf /src \
-    && rm -rf /opt/glibc-2.29 \
-    && rm -rf /opt/glibc-2.29.tar.gz \
     && yum clean all

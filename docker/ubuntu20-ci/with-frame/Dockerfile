@@ -31,7 +31,7 @@ RUN groupadd -r -g 92 frr && \
       echo 'frr ALL = NOPASSWD: ALL' | tee /etc/sudoers.d/frr && \
       mkdir -p /home/frr && chown frr.frr /home/frr
 
-# Reinstall glibc
+# Recompile glibc with frame pointer
 RUN cd /opt && \
     wget https://mirrors.aliyun.com/gnu/glibc/glibc-2.34.tar.gz && \
     tar xzf glibc-2.34.tar.gz && \
@@ -39,8 +39,8 @@ RUN cd /opt && \
     mkdir build && \
     cd build && \
     ../configure CFLAGS="-$OPTIM_TAG -fno-omit-frame-pointer" --prefix=/usr && \
-    make -j16
-    # rm -rf /opt/glibc-2.34
+    make -j16 && \
+    rm -rf /opt/glibc-2.34.tar.gz
 
 ENV GLIBC=/opt/glibc-2.34/build
 ARG LIB_PATH=/lib

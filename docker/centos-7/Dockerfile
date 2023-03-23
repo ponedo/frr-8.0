@@ -92,7 +92,7 @@ RUN source ~/.bashrc && \
         cd build && \
         ../configure CFLAGS="-O2 -fno-omit-frame-pointer" --prefix=/usr && \
         ( make -j32 && make install || true ) && \
-    rm -rf /opt/glibc-2.29
+    rm -rf /opt/glibc-2.29.tar.gz
 
 # # Install glibc
 # COPY --from=centos-7-builder /opt/glibc-2.29/ /opt/glibc-2.29/

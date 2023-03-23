@@ -56,5 +56,5 @@ docker build \
 	--file=docker/centos-7/${FRAME_TAG}/Dockerfile \
 	--build-arg="PKGVER=$PKGVER" \
 	--build-arg="OPTIM_TAG=$OPTIM_TAG" \
-	--tag="ponedo/frr:${MACHINE}-${GITTAG}-${FRAME_TAG}-${OPTIM_TAG}" \
+	--tag="ponedo/frr-centos7:${MACHINE}-${GITTAG}-${FRAME_TAG}-${OPTIM_TAG}" \
 	.

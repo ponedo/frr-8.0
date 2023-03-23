@@ -52,7 +52,7 @@ fi
 
 docker build \
 	--platform=linux/${MACHINE} \
-	--file=docker/centos-7/${FRAME_TAG}/Dockerfile \
+	--file=docker/ubuntu20-ci/${FRAME_TAG}/Dockerfile \
 	--build-arg="OPTIM_TAG=$OPTIM_TAG" \
-	--tag="ponedo/frr:${MACHINE}-${GITTAG}-${FRAME_TAG}-${OPTIM_TAG}" \
+	--tag="ponedo/frr-ubuntu20:${MACHINE}-${GITTAG}-${FRAME_TAG}-${OPTIM_TAG}" \
 	.
