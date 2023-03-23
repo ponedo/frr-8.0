@@ -28,4 +28,4 @@ docker build \
 	--tag="frr:centos-7-$GITREV" \
 	.
 
-docker rmi "frr:centos-7-builder-$GITREV"
+# docker rmi "frr:centos-7-builder-$GITREV"

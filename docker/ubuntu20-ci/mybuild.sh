@@ -41,7 +41,6 @@ set -e
 ##
 GITREV="$(git rev-parse --short=10 HEAD)"
 GITTAG="$(git describe --tags | grep -o -E "frr-[^-]+(-[A-Za-z]+)?")"
-PKGVER="$(printf '%u\n' 0x$GITREV)"
 
 if [ "${MACHINE}" == "x86_64" ] ; then
 	MACHINE="amd64"
@@ -53,8 +52,7 @@ fi
 
 docker build \
 	--platform=linux/${MACHINE} \
-	--file=docker/centos-7/${FRAME_TAG}/Dockerfile \
-	--build-arg="PKGVER=$PKGVER" \
+	--file=docker/ubuntu20-ci/${FRAME_TAG}/Dockerfile \
 	--build-arg="OPTIM_TAG=$OPTIM_TAG" \
-	--tag="ponedo/frr-centos7:${MACHINE}-${GITTAG}-${FRAME_TAG}-${OPTIM_TAG}" \
+	--tag="ponedo/frr-ubuntu20:${MACHINE}-${GITTAG}-${FRAME_TAG}-${OPTIM_TAG}" \
 	.

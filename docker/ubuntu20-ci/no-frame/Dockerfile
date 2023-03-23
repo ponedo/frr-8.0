@@ -1,4 +1,5 @@
-FROM ubuntu:20.04
+FROM --platform=${TARGETPLATFORM} ubuntu:20.04
+ARG OPTIM_TAG
 
 ARG DEBIAN_FRONTEND=noninteractive
 ENV APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=DontWarn
@@ -30,27 +31,6 @@ RUN groupadd -r -g 92 frr && \
       echo 'frr ALL = NOPASSWD: ALL' | tee /etc/sudoers.d/frr && \
       mkdir -p /home/frr && chown frr.frr /home/frr
 
-# Recompile glibc with frame pointer
-RUN cd /opt && \
-    wget https://mirrors.aliyun.com/gnu/glibc/glibc-2.34.tar.gz && \
-    tar xzf glibc-2.34.tar.gz && \
-    cd /opt/glibc-2.34 && \
-    mkdir build && \
-    cd build && \
-    ../configure CFLAGS="-O2 -fno-omit-frame-pointer" --prefix=/usr && \
-    make -j16 && \
-    rm -rf /opt/glibc-2.34.tar.gz
-
-ENV GLIBC=/opt/glibc-2.34/build
-ARG LIB_PATH=/lib
-ARG GLIBC_LIB_PATH=/lib
-RUN LIB_PATH=$(grep -v '^#' $(cat /etc/ld.so.conf | grep 'include' | awk '{print $2}') | awk -F ':' '{print $2}' | paste -s -d ':') && \
-    echo "export LIB_PATH_ENV=$LIB_PATH" >> /etc/environment && \
-    GLIBC_LIB_PATH=${GLIBC}:${GLIBC}/math:${GLIBC}/elf:${GLIBC}/dlfcn:${GLIBC}/nss:${GLIBC}/nis:${GLIBC}/rt:${GLIBC}/resolv:${GLIBC}/nptl:${GLIBC}/dfp && \
-    echo "export GLIBC_LIB_PATH_ENV=$GLIBC_LIB_PATH" >> /etc/environment
-
-    # GLIBC_LIB_PATH=${GLIBC}:${GLIBC}/math:${GLIBC}/elf:${GLIBC}/dlfcn:${GLIBC}/nss:${GLIBC}/nis:${GLIBC}/rt:${GLIBC}/resolv:${GLIBC}/crypt:${GLIBC}/nptl:${GLIBC}/dfp && \
-
 #for libyang 2
 RUN apt-get install -y cmake libpcre2-dev
 
@@ -63,7 +43,7 @@ RUN . /etc/environment && \
     cd libyang && \
     git checkout v2.0.0 && \
     mkdir build; cd build && \
-    cmake -DCMAKE_C_FLAGS="-Wl,-rpath=${GLIBC_LIB_PATH_ENV}:${LIB_PATH_ENV} -Wl,--dynamic-linker=${GLIBC}/elf/ld.so -O2 -fno-omit-frame-pointer" \
+    cmake -DCMAKE_C_FLAGS="-$OPTIM_TAG" \
           -DCMAKE_INSTALL_PREFIX:PATH=/usr \
           -DCMAKE_BUILD_TYPE:String="Release" .. && \
     make -j16 && \
@@ -78,7 +58,7 @@ RUN cd /home/frr/ && ls -al && ls -al frr
 RUN . /etc/environment && \
     cd /home/frr/frr/ && \
     ./bootstrap.sh && \
-    ./configure CFLAGS="-Wl,-rpath=${GLIBC_LIB_PATH_ENV}:${LIB_PATH_ENV} -Wl,--dynamic-linker=${GLIBC}/elf/ld.so -O2 -fno-omit-frame-pointer" \
+    ./configure CFLAGS="-$OPTIM_TAG" \
        --prefix=/usr \
        --localstatedir=/var/run/frr \
        --sbindir=/usr/lib/frr \
