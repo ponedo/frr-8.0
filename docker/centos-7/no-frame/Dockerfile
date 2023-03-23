@@ -1,11 +1,13 @@
 FROM --platform=${TARGETPLATFORM} centos:centos7
 ARG TARGETARCH
+ARG OPTIM_TAG
+
 RUN cp -a /etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo.bak
 COPY ./docker/centos-7/CentOS-7-${TARGETARCH}.repo /etc/yum.repos.d/CentOS-Base.repo
 RUN yum clean all
 RUN yum makecache
-RUN yum install -y epel-release
-RUN yum install -y rpm-build autoconf automake libtool make \
+RUN yum install -y epel-release \
+        rpm-build autoconf automake libtool make \
         readline-devel texinfo net-snmp-devel groff pkgconfig \
         json-c-devel pam-devel bison flex pytest c-ares-devel \
         python3-devel python3-sphinx systemd-devel libcap-devel \
@@ -13,7 +15,8 @@ RUN yum install -y rpm-build autoconf automake libtool make \
         https://ci1.netdef.org/artifact/LIBYANG-LIBYANGV2/shared/build-2/CentOS-7-x86_64-Packages/libyang2-2.0.0.10.g2eb910e4-1.el7.x86_64.rpm \
         https://ci1.netdef.org/artifact/LIBYANG-LIBYANGV2/shared/build-2/CentOS-7-x86_64-Packages/libyang2-devel-2.0.0.10.g2eb910e4-1.el7.x86_64.rpm \
         https://ci1.netdef.org/artifact/RPKI-RTRLIB/shared/build-110/CentOS-7-x86_64-Packages/librtr-0.7.0-1.el7.centos.x86_64.rpm \
-        https://ci1.netdef.org/artifact/RPKI-RTRLIB/shared/build-110/CentOS-7-x86_64-Packages/librtr-devel-0.7.0-1.el7.centos.x86_64.rpm
+        https://ci1.netdef.org/artifact/RPKI-RTRLIB/shared/build-110/CentOS-7-x86_64-Packages/librtr-devel-0.7.0-1.el7.centos.x86_64.rpm \
+    && yum clean all
 # Update pip
 # RUN curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output /tmp/get-pip.py && \
 #         python2 /tmp/get-pip.py && \
@@ -23,11 +26,12 @@ RUN yum install -y rpm-build autoconf automake libtool make \
 #         pip2 install "scapy>=2.4.2" && \
 #         pip2 install exabgp==3.4.17
 # Update gcc
-RUN yum install -y centos-release-scl
-RUN yum install -y devtoolset-8-gcc devtoolset-8-gcc-c++ \
-        devtoolset-8-make devtoolset-8-binutils
-RUN echo "source /opt/rh/devtoolset-8/enable" >> ~/.bashrc && \
-        source ~/.bashrc
+RUN yum install -y centos-release-scl \
+    && yum install -y devtoolset-8-gcc devtoolset-8-gcc-c++ \
+        devtoolset-8-make devtoolset-8-binutils \
+    && echo "source /opt/rh/devtoolset-8/enable" >> ~/.bashrc \
+    && source ~/.bashrc \
+    && yum clean all
         # source scl_source enable devtoolset-8 && \
         # scl enable devtoolset-8 -- bash
 
@@ -45,9 +49,9 @@ RUN groupadd -r -g 92 frr && \
 RUN mkdir -p /etc/frr /var/run/frr
 RUN chown -R frr:frr /etc/frr /var/run/frr
 
-COPY . /src
 ARG PKGVER
 ARG OPTIM_TAG
+COPY . /src
 
 RUN source ~/.bashrc \
     && cd /src \
@@ -70,6 +74,7 @@ RUN source ~/.bashrc \
         --with-pkg-git-version \ 
         --with-pkg-extra-version="_git$PKGVER" \ 
         SPHINXBUILD=/usr/bin/sphinx-build \
-    && make -j16 && make install
+    && make -j16 && make install \
+    && rm -rf /src
 
-RUN rm -rf /src
+RUN rm -rf /src && yum clean all

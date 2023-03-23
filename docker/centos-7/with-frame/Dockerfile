@@ -1,5 +1,7 @@
 FROM --platform=${TARGETPLATFORM} centos:centos7
 ARG TARGETARCH
+ARG OPTIM_TAG
+
 RUN cp -a /etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo.bak
 COPY ./docker/centos-7/CentOS-7-${TARGETARCH}.repo /etc/yum.repos.d/CentOS-Base.repo
 RUN yum clean all
@@ -39,8 +41,17 @@ RUN source ~/.bashrc && \
         cd /opt/glibc-2.29 && \
         mkdir build && \
         cd build && \
-        ../configure CFLAGS="-O2 -fno-omit-frame-pointer" --prefix=/usr && \
-        make -j32 && make install || true
+        ../configure CFLAGS="-$OPTIM_TAG -fno-omit-frame-pointer" --prefix=/usr && \
+        make -j32 && \
+        rm -rf /opt/glibc-2.29.tar.gz
+
+ENV GLIBC=/opt/glibc-2.29/build
+ARG LIB_PATH=/lib
+ARG GLIBC_LIB_PATH=/lib
+RUN LIB_PATH=$(grep -v '^#' $(cat /etc/ld.so.conf | grep 'include' | awk '{print $2}') | awk -F ':' '{print $2}' | paste -s -d ':') && \
+    echo "export LIB_PATH_ENV=$LIB_PATH" >> /etc/environment && \
+    GLIBC_LIB_PATH=${GLIBC}:${GLIBC}/math:${GLIBC}/elf:${GLIBC}/dlfcn:${GLIBC}/nss:${GLIBC}/nis:${GLIBC}/rt:${GLIBC}/resolv:${GLIBC}/nptl:${GLIBC}/dfp && \
+    echo "export GLIBC_LIB_PATH_ENV=$GLIBC_LIB_PATH" >> source ~/.bashrc
 
 # Add user group
 RUN groupadd -r -g 92 frr && \
@@ -56,14 +67,13 @@ RUN groupadd -r -g 92 frr && \
 RUN mkdir -p /etc/frr /var/run/frr
 RUN chown -R frr:frr /etc/frr /var/run/frr
 
-COPY . /src
 ARG PKGVER
-ARG OPTIM_TAG
+COPY . /src
 
 RUN source ~/.bashrc \
     && cd /src \
     && ./bootstrap.sh \
-    && ./configure CFLAGS="-$OPTIM_TAG -fno-omit-frame-pointer" \ 
+    && ./configure CFLAGS="-Wl,-rpath=${GLIBC_LIB_PATH_ENV}:${LIB_PATH_ENV} -Wl,--dynamic-linker=${GLIBC}/elf/ld.so -$OPTIM_TAG -fno-omit-frame-pointer" \
         --bindir=/usr/bin \ 
         --sbindir=/usr/lib/frr \ 
         --sysconfdir=/etc/frr \ 
@@ -83,4 +93,5 @@ RUN source ~/.bashrc \
         SPHINXBUILD=/usr/bin/sphinx-build \
     && make -j16 && make install
 
-RUN rm -rf /src
+RUN rm -rf /src \
+    && yum clean all
